@@ -54,7 +54,7 @@ import shutil
 
 from Bio.Emboss import Primer3
 
-from diagnostic_primers import eprimer3, config
+from diagnostic_primers import config, eprimer3, load_primers, write_primers
 
 from tools import PDPTestCase
 
@@ -183,8 +183,11 @@ class TestParsing(PDPTestCase):
         # The three paths below should point to the same data in three
         # different formats
         self.ep3primerfile = os.path.join(self.datadir, "GCF_000011605.1.eprimer3")
-        self.ep3extprimerfile = os.path.join(
+        self.ep3extprimerfile_in = os.path.join(
             self.datadir, "GCF_000011605.1_named.eprimer3"
+        )
+        self.ep3extprimerfile_tgt = os.path.join(
+            self.targetdir, "GCF_000011605.1_named.eprimer3"
         )
         self.jsonprimerfile = os.path.join(self.datadir, "GCF_000011605.1_named.json")
         self.fastaprimerfile = os.path.join(self.datadir, "GCF_000011605.1_named.fasta")
@@ -202,41 +205,39 @@ class TestParsing(PDPTestCase):
 
     def test_load_primers_eprimer3(self):
         """ePrimer3 format primers load correctly."""
-        primers = eprimer3.load_primers(self.ep3primerfile, fmt="eprimer3", noname=True)
+        primers = load_primers(self.ep3primerfile, fmt="eprimer3", noname=True)
         for primer1, primer2 in zip(primers, self.ep3primertargets):
             self.assertDictEqual(primer1.__dict__, primer2.__dict__)
 
     def test_load_primers_eprimer3extended(self):
         """ePrimer3 extended format primers load without error."""
-        primers = eprimer3.load_primers(
-            self.ep3extprimerfile, fmt="eprimer3", noname=True
-        )
+        primers = load_primers(self.ep3extprimerfile_in, fmt="eprimer3", noname=True)
         for primer1, primer2 in zip(primers, self.ep3primertargets):
             self.assertDictEqual(primer1.__dict__, primer2.__dict__)
 
     def test_load_primers_json(self):
         """JSON format primers load without error."""
-        primers = eprimer3.load_primers(self.jsonprimerfile, fmt="json")
+        primers = load_primers(self.jsonprimerfile, fmt="json")
         for primer1, primer2 in zip(primers, self.namedprimertargets):
             self.assertDictEqual(primer1.__dict__, primer2.__dict__)
 
     def test_write_primers_eprimer3(self):
         """parse primers and write in ePrimer3 format."""
-        primers = eprimer3.load_primers(self.ep3primerfile, fmt="eprimer3")
+        primers = load_primers(self.ep3primerfile, fmt="eprimer3")
         outfname = os.path.join(self.outdir, "test_write_primers.eprimer3")
-        eprimer3.write_primers(primers, outfname, fmt="eprimer3")
-        self.assertEprimer3Equal(outfname, self.ep3extprimerfile)
+        write_primers(primers, outfname, fmt="eprimer3")
+        self.assertEprimer3Equal(outfname, self.ep3extprimerfile_tgt)
 
     def test_write_primers_json(self):
         """parse primers and write in JSON format."""
-        primers = eprimer3.load_primers(self.ep3primerfile, fmt="ep3")
+        primers = load_primers(self.ep3primerfile, fmt="ep3")
         outfname = os.path.join(self.outdir, "test_write_primers.json")
-        eprimer3.write_primers(primers, outfname, fmt="json")
+        write_primers(primers, outfname, fmt="json")
         self.assertJsonEqual(outfname, self.jsonprimerfile)
 
     def test_write_primers_fasta(self):
         """parse primers and write in FASTA format."""
-        primers = eprimer3.load_primers(self.jsonprimerfile, fmt="json")
+        primers = load_primers(self.jsonprimerfile, fmt="json")
         outfname = os.path.join(self.outdir, "test_write_primers.fasta")
-        eprimer3.write_primers(primers, outfname, fmt="fasta")
+        write_primers(primers, outfname, fmt="fasta")
         self.assertFilesEqual(outfname, self.fastaprimerfile)
